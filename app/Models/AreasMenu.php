@@ -26,6 +26,22 @@ class AreasMenu extends Model
         'activo'
     ];
 
+    public function eventos()
+    {
+        return $this->hasMany(EventoArea::class, 'area_id')
+                    ->where('activo', true)
+                    ->orderBy('orden', 'asc')
+                    ->orderBy('created_at', 'desc');
+    }
+
+    // Todos los eventos (incluso inactivos) para administración
+    public function todosLosEventos()
+    {
+        return $this->hasMany(EventoArea::class, 'area_id')
+                    ->orderBy('orden', 'asc')
+                    ->orderBy('created_at', 'desc');
+    }
+
     // Agregar valores por defecto
     protected $attributes = [
         'activo' => true,

@@ -3,6 +3,19 @@
 @section('title', $direccion->nombre . ' - DRE Huánuco')
 
 @section('content')
+@php
+    // Obtener todos los eventos de todas las áreas de esta dirección
+    $todosLosEventos = collect();
+    foreach($direccion->areasMenu as $area) {
+        if($area->eventos) {
+            foreach($area->eventos as $evento) {
+                $todosLosEventos->push($evento);
+            }
+        }
+    }
+    $eventosChunks = $todosLosEventos->chunk(3);
+@endphp
+
 <style>
 /* Estilos empresariales sobrios */
 .enterprise-container {
@@ -20,7 +33,7 @@
 }
 
 .header-section {
-    background: #2d3748;
+    background: #6e82a4 ;
     padding: 40px 0;
     position: relative;
 }
@@ -239,49 +252,43 @@
     transform: scale(1.01);
 }
 
-/* Carousel de recursos */
-.resources-carousel {
-    background: #2d3748;
-    padding: 32px 0;
-    margin-top: 32px;
+/* Carousel de eventos del área */
+.area-events-carousel {
+    background: #f7fafc;
+    padding: 24px;
+    border-top: 1px solid #e2e8f0;
 }
 
-.carousel-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-.carousel-header {
+.events-carousel-header {
     text-align: center;
-    color: white;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
 }
 
-.carousel-header h3 {
-    font-size: 22px;
+.events-carousel-header h3 {
+    font-size: 18px;
     font-weight: 600;
-    margin: 0 0 6px 0;
+    color: #2d3748;
+    margin: 0 0 4px 0;
 }
 
-.carousel-header p {
-    font-size: 14px;
-    opacity: 0.8;
+.events-carousel-header p {
+    font-size: 13px;
+    color: #718096;
     margin: 0;
 }
 
-.carousel-wrapper {
+.events-carousel-wrapper {
     position: relative;
     overflow: hidden;
     border-radius: 8px;
 }
 
-.carousel-track {
+.events-carousel-track {
     display: flex;
     transition: transform 0.4s ease;
 }
 
-.carousel-slide {
+.events-carousel-slide {
     min-width: 100%;
     display: flex;
     justify-content: center;
@@ -289,23 +296,23 @@
     padding: 0 16px;
 }
 
-.resource-card {
+.event-card {
     background: white;
     border-radius: 8px;
     padding: 20px;
     width: 280px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     border: 1px solid #e2e8f0;
     transition: transform 0.2s ease;
 }
 
-.resource-card:hover {
+.event-card:hover {
     transform: translateY(-2px);
 }
 
-.resource-icon {
-    width: 50px;
-    height: 50px;
+.event-icon {
+    width: 40px;
+    height: 40px;
     background: #4a5568;
     border-radius: 8px;
     display: flex;
@@ -314,69 +321,86 @@
     margin-bottom: 12px;
 }
 
-.resource-icon i {
+.event-icon i {
     color: white;
-    font-size: 20px;
+    font-size: 16px;
 }
 
-.resource-card h4 {
-    font-size: 16px;
+.event-card h4 {
+    font-size: 15px;
     font-weight: 600;
     color: #2d3748;
     margin: 0 0 6px 0;
+    line-height: 1.3;
 }
 
-.resource-card p {
+.event-card p {
     color: #718096;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.4;
-    margin: 0 0 14px 0;
+    margin: 0 0 12px 0;
 }
 
-.resource-btn {
+.event-area-tag {
+    background: #edf2f7;
+    color: #4a5568;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    display: inline-block;
+}
+
+.event-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.event-btn {
     background: #4a5568;
     color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
     text-decoration: none;
     font-weight: 500;
-    font-size: 13px;
+    font-size: 10px;
     display: inline-flex;
     align-items: center;
     transition: all 0.2s ease;
 }
 
-.resource-btn:hover {
+.event-btn:hover {
     background: #2d3748;
-    transform: translateY(-1px);
     text-decoration: none;
     color: white;
 }
 
-.resource-btn i {
-    margin-right: 6px;
+.event-btn i {
+    margin-right: 4px;
 }
 
-/* Indicadores del carousel */
-.carousel-indicators {
+/* Indicadores del carousel de eventos */
+.events-carousel-indicators {
     display: flex;
     justify-content: center;
-    margin-top: 24px;
+    margin-top: 16px;
     gap: 6px;
 }
 
-.indicator {
-    width: 10px;
-    height: 10px;
+.events-indicator {
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
+    background: #cbd5e1;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.indicator.active {
-    background: white;
-    transform: scale(1.1);
+.events-indicator.active {
+    background: #4a5568;
+    transform: scale(1.2);
 }
 
 /* Responsive */
@@ -386,12 +410,12 @@
         gap: 24px;
     }
     
-    .carousel-slide {
+    .events-carousel-slide {
         flex-direction: column;
         align-items: center;
     }
     
-    .resource-card {
+    .event-card {
         width: 260px;
     }
 }
@@ -456,8 +480,8 @@
                     @else
                         <div style="padding: 32px 20px; text-align: center; color: #718096;">
                             <i class="fas fa-info-circle" style="font-size: 20px; margin-bottom: 6px;"></i>
-                            <p style="margin: 0; font-size: 13px;">No hay áreas configuradas</p>
-                        </div>
+                                <p style="margin: 0; font-size: 13px;">No hay áreas configuradas</p>
+                            </div>
                     @endif
                 </nav>
             </aside>
@@ -555,159 +579,251 @@
                             </div>
                         </div>
                     @endif
-                @else
-                    <div style="padding: 60px 32px; text-align: center;">
-                        <i class="fas fa-mouse-pointer" style="font-size: 48px; color: #cbd5e1; margin-bottom: 20px;"></i>
-                        <h3 style="font-size: 20px; font-weight: 600; color: #2d3748; margin-bottom: 8px;">
-                            Seleccione un Área Organizacional
-                        </h3>
-                        <p style="color: #718096; margin-bottom: 24px; font-size: 14px;">
-                            Explore las diferentes áreas de nuestra dirección haciendo clic en el menú lateral.
-                        </p>
-                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
-                            @foreach($direccion->areasMenu as $area)
-                                <a href="/menus/paginaweb/{{ $direccion->idpagina }}?area={{ $area->slug }}" 
-                                   style="background: #edf2f7; color: #4a5568; padding: 8px 16px; border-radius: 16px; text-decoration: none; font-weight: 500; font-size: 13px; transition: all 0.2s ease;"
-                                   onmouseover="this.style.backgroundColor='#e2e8f0'; this.style.transform='translateY(-1px)'"
-                                   onmouseout="this.style.backgroundColor='#edf2f7'; this.style.transform='translateY(0)'">
-                                    {{ $area->nombre }}
-                                </a>
-                            @endforeach
+
+                    <!-- Carousel de eventos del área actual -->
+                    @php
+                        // Obtener eventos del área actual
+                        $eventosArea = $area_actual->eventos ?? collect();
+                        $eventosChunks = $eventosArea->chunk(3);
+                    @endphp
+                    
+                    @if($eventosArea->count() > 0)
+                        <div class="area-events-carousel">
+                            <div class="events-carousel-header">
+                                <h3>Eventos y Actividades</h3>
+                                <p>Últimas actividades del {{ $area_actual->nombre }}</p>
+                            </div>
+                            
+                            <div class="events-carousel-wrapper">
+                                <div class="events-carousel-track" id="eventsCarouselTrack">
+                                    @foreach($eventosChunks as $chunkIndex => $chunk)
+                                    <div class="events-carousel-slide">
+                                        @foreach($chunk as $evento)
+                                        <div class="event-card">
+                                            <div class="event-icon">
+                                                <i class="fas fa-calendar-check"></i>
+                                            </div>
+                                            <div class="event-area-tag">{{ $area_actual->nombre }}</div>
+                                            <h4>{{ $evento->titulo }}</h4>
+                                            <p>{{ Str::limit($evento->descripcion, 80) }}</p>
+                                            
+                                            <div class="event-actions">
+                                                @foreach($evento->enlaces as $enlace)
+                                                    <a href="{{ $enlace['url'] }}" target="_blank" class="event-btn" title="{{ $enlace['descripcion'] }}">
+                                                        <i class="fas fa-link"></i>
+                                                        {{ Str::limit($enlace['descripcion'], 15) }}
+                                                    </a>
+                                                @endforeach
+                                                
+                                                @if($evento->enlace_externo)
+                                                    <a href="{{ $evento->enlace_externo }}" target="_blank" class="event-btn">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                        Ver más
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            
+                            @if($eventosChunks->count() > 1)
+                            <div class="events-carousel-indicators">
+                                @foreach($eventosChunks as $index => $chunk)
+                                    <div class="events-indicator {{ $index === 0 ? 'active' : '' }}" onclick="goToEventsSlide({{ $index }})"></div>
+                                @endforeach
+                            </div>
+                            @endif
                         </div>
+                    @endif
+
+                @else
+                    <!-- CONTENIDO PRINCIPAL DE LA DIRECCIÓN -->
+                    <div style="padding: 32px;">
+                        <!-- Descripción de la dirección -->
+                        @if($direccion->descripcion)
+                        <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+                            <h3 style="font-size: 18px; font-weight: 600; color: #2d3748; margin-bottom: 12px; display: flex; align-items: center;">
+                                <i class="fas fa-info-circle" style="margin-right: 8px; color: #4a5568;"></i>
+                                Acerca de esta Dirección
+                            </h3>
+                            <p style="color: #4a5568; line-height: 1.6; margin: 0; font-size: 14px;">
+                                {{ $direccion->descripcion }}
+                            </p>
+                        </div>
+                        @endif
+
+                        <!-- Contenido de la página -->
+                        @if($direccion->pagina && $direccion->pagina->cont_pagina)
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+                            <div style="color: #4a5568; line-height: 1.6; font-size: 14px;">
+                                {!! $direccion->pagina->cont_pagina !!}
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Áreas disponibles -->
+                        @if($direccion->areasMenu && $direccion->areasMenu->count() > 0)
+                        <div style="margin-bottom: 32px;">
+                            <h3 style="font-size: 20px; font-weight: 600; color: #2d3748; margin-bottom: 16px; display: flex; align-items: center;">
+                                <i class="fas fa-sitemap" style="margin-right: 8px; color: #4a5568;"></i>
+                                Áreas Organizacionales
+                            </h3>
+                            <p style="color: #718096; margin-bottom: 20px; font-size: 14px;">
+                                Explore las diferentes áreas de nuestra dirección haciendo clic en cualquiera de las siguientes opciones:
+                            </p>
+                            
+                            <!-- Grid de áreas -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                                @foreach($direccion->areasMenu as $area)
+                                <a href="/menus/paginaweb/{{ $direccion->idpagina }}?area={{ $area->slug }}" 
+                                   style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; text-decoration: none; transition: all 0.2s ease; display: block; box-shadow: 0 2px 4px rgba(0,0,0,0.03);"
+                                   onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'; this.style.borderColor='#cbd5e0'"
+                                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.03)'; this.style.borderColor='#e2e8f0'">
+                                    
+                                    <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                        <div style="width: 40px; height: 40px; background: #4a5568; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                                            <i class="fas fa-building" style="color: white; font-size: 16px;"></i>
+                                        </div>
+                                        <div style="flex: 1;">
+                                            <h4 style="font-size: 16px; font-weight: 600; color: #2d3748; margin: 0 0 4px 0; line-height: 1.2;">
+                                                {{ $area->nombre }}
+                                            </h4>
+                                            <span style="background: #edf2f7; color: #4a5568; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;">
+                                                {{ $area->activo ? 'Operativo' : 'Inactivo' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    @if($area->descripcion)
+                                    <p style="color: #718096; font-size: 13px; line-height: 1.4; margin: 0 0 12px 0;">
+                                        {{ Str::limit($area->descripcion, 100) }}
+                                    </p>
+                                    @endif
+                                    
+                                    <!-- Indicadores de contenido -->
+                                    <div style="display: flex; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+                                        @if($area->imagen_funcionario)
+                                            <span style="background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">
+                                                <i class="fas fa-user" style="margin-right: 2px;"></i>
+                                                Funcionario
+                                            </span>
+                                        @endif
+                                        @if($area->imagen_organigrama)
+                                            <span style="background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">
+                                                <i class="fas fa-sitemap" style="margin-right: 2px;"></i>
+                                                Organigrama
+                                            </span>
+                                        @endif
+                                        @if($area->eventos && $area->eventos->count() > 0)
+                                            <span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">
+                                                <i class="fas fa-calendar" style="margin-right: 2px;"></i>
+                                                {{ $area->eventos->count() }} Eventos
+                                            </span>
+                                        @endif
+                                        @if($area->link_descarga_1 || $area->link_descarga_2)
+                                            <span style="background: #e5e7eb; color: #374151; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;">
+                                                <i class="fas fa-download" style="margin-right: 2px;"></i>
+                                                Documentos
+                                            </span>
+                                        @endif
+                                    </div>
+                                    
+                                    <div style="margin-top: 12px; padding-top: 8px; text-align: right;">
+                                        <span style="color: #4a5568; font-size: 12px; font-weight: 500;">
+                                            Explorar área →
+                                        </span>
+                                    </div>
+                                </a>
+                                @endforeach
+                            </div>
+                        </div>
+                        @else
+                        <div style="text-align: center; padding: 40px 20px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 32px; color: #f59e0b; margin-bottom: 12px;"></i>
+                            <h4 style="font-size: 16px; font-weight: 600; color: #2d3748; margin-bottom: 6px;">
+                                No hay áreas configuradas
+                            </h4>
+                            <p style="color: #718096; font-size: 13px; margin: 0;">
+                                Esta dirección aún no tiene áreas organizacionales definidas.
+                            </p>
+                        </div>
+                        @endif
+
+                        <!-- Carousel de todos los eventos de la dirección -->
+                        @php
+                            // Obtener todos los eventos de todas las áreas de esta dirección
+                            $todosLosEventos = collect();
+                            foreach($direccion->areasMenu as $area) {
+                                if($area->eventos) {
+                                    foreach($area->eventos as $evento) {
+                                        $todosLosEventos->push($evento);
+                                    }
+                                }
+                            }
+                            $eventosChunks = $todosLosEventos->chunk(3);
+                        @endphp
+                        
+                        @if($todosLosEventos->count() > 0)
+                        <div style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-top: 24px;">
+                            <div style="text-align: center; margin-bottom: 24px;">
+                                <h3 style="font-size: 18px; font-weight: 600; color: #2d3748; margin: 0 0 4px 0;">
+                                    Últimas Actividades
+                                </h3>
+                                <p style="color: #718096; font-size: 13px; margin: 0;">
+                                    Eventos recientes de {{ $direccion->nombre }}
+                                </p>
+                            </div>
+                            
+                            <div class="events-carousel-wrapper">
+                                <div class="events-carousel-track" id="allEventsCarouselTrack">
+                                    @foreach($eventosChunks as $chunkIndex => $chunk)
+                                    <div class="events-carousel-slide">
+                                        @foreach($chunk as $evento)
+                                        <div class="event-card">
+                                            <div class="event-icon">
+                                                <i class="fas fa-calendar-check"></i>
+                                            </div>
+                                            <div class="event-area-tag">{{ $evento->area->nombre }}</div>
+                                            <h4>{{ $evento->titulo }}</h4>
+                                            <p>{{ Str::limit($evento->descripcion, 80) }}</p>
+                                            
+                                            <div class="event-actions">
+                                                @foreach($evento->enlaces as $enlace)
+                                                    <a href="{{ $enlace['url'] }}" target="_blank" class="event-btn" title="{{ $enlace['descripcion'] }}">
+                                                        <i class="fas fa-link"></i>
+                                                        {{ Str::limit($enlace['descripcion'], 15) }}
+                                                    </a>
+                                                @endforeach
+                                                
+                                                @if($evento->enlace_externo)
+                                                    <a href="{{ $evento->enlace_externo }}" target="_blank" class="event-btn">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                        Ver más
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            
+                            @if($eventosChunks->count() > 1)
+                            <div class="events-carousel-indicators">
+                                @foreach($eventosChunks as $index => $chunk)
+                                    <div class="events-indicator {{ $index === 0 ? 'active' : '' }}" onclick="goToAllEventsSlide({{ $index }})"></div>
+                                @endforeach
+                            </div>
+                            @endif
+                        </div>
+                        @endif
                     </div>
                 @endif
             </main>
-        </div>
-    </div>
-</div>
-
-<!-- Carousel de recursos -->
-<div class="resources-carousel">
-    <div class="carousel-container">
-        <div class="carousel-header">
-            <h3>Recursos y Documentación</h3>
-            <p>Accede a los documentos oficiales y recursos importantes</p>
-        </div>
-        
-        <div class="carousel-wrapper">
-            <div class="carousel-track" id="carouselTrack">
-                <!-- Slide 1 -->
-                <div class="carousel-slide">
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-file-pdf"></i>
-                        </div>
-                        <h4>Manual de Organización</h4>
-                        <p>Documento que detalla la estructura organizacional y funciones de cada área.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-download"></i>
-                            Descargar PDF
-                        </a>
-                    </div>
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-sitemap"></i>
-                        </div>
-                        <h4>Organigrama General</h4>
-                        <p>Representación gráfica de la estructura jerárquica de la dirección.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-eye"></i>
-                            Ver Documento
-                        </a>
-                    </div>
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <h4>Directorio de Personal</h4>
-                        <p>Lista actualizada de funcionarios y personal de contacto por área.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-address-book"></i>
-                            Ver Directorio
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Slide 2 -->
-                <div class="carousel-slide">
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-clipboard-list"></i>
-                        </div>
-                        <h4>Procedimientos</h4>
-                        <p>Guía de procedimientos administrativos y procesos internos.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-download"></i>
-                            Descargar Guía
-                        </a>
-                    </div>
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-balance-scale"></i>
-                        </div>
-                        <h4>Marco Normativo</h4>
-                        <p>Normativas y reglamentos que rigen el funcionamiento institucional.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-book"></i>
-                            Ver Normativas
-                        </a>
-                    </div>
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                        <h4>Cronograma Anual</h4>
-                        <p>Planificación anual de actividades y eventos institucionales.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-calendar"></i>
-                            Ver Cronograma
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Slide 3 -->
-                <div class="carousel-slide">
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-phone"></i>
-                        </div>
-                        <h4>Contacto Institucional</h4>
-                        <p>Información de contacto y canales de comunicación oficial.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-address-card"></i>
-                            Ver Contactos
-                        </a>
-                    </div>
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-map-marked-alt"></i>
-                        </div>
-                        <h4>Ubicación y Sedes</h4>
-                        <p>Mapa y direcciones de las diferentes sedes y oficinas.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-map"></i>
-                            Ver Ubicaciones
-                        </a>
-                    </div>
-                    <div class="resource-card">
-                        <div class="resource-icon">
-                            <i class="fas fa-question-circle"></i>
-                        </div>
-                        <h4>Preguntas Frecuentes</h4>
-                        <p>Respuestas a las consultas más comunes de los usuarios.</p>
-                        <a href="#" class="resource-btn">
-                            <i class="fas fa-question"></i>
-                            Ver FAQ
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="carousel-indicators">
-            <div class="indicator active" onclick="goToSlide(0)"></div>
-            <div class="indicator" onclick="goToSlide(1)"></div>
-            <div class="indicator" onclick="goToSlide(2)"></div>
         </div>
     </div>
 </div>
@@ -721,34 +837,88 @@
         <img id="modalImage" src="" alt="Organigrama" style="max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
     </div>
 </div>
-
 <script>
-// Carousel functionality
-let currentSlide = 0;
-const totalSlides = 3;
-const track = document.getElementById('carouselTrack');
-const indicators = document.querySelectorAll('.indicator');
+// Carousel de eventos functionality
+let currentEventsSlide = 0;
+let currentAllEventsSlide = 0;
 
-function updateCarousel() {
-    track.style.transform = `translateX(-${currentSlide * 100}%)`;
-    
-    indicators.forEach((indicator, index) => {
-        indicator.classList.toggle('active', index === currentSlide);
-    });
+// Para el área específica (solo cuando hay área seleccionada)
+@if(isset($area_actual) && $area_actual && $area_actual->eventos->count() > 0)
+    @php
+        $eventosAreaChunks = $area_actual->eventos->chunk(3);
+    @endphp
+    const totalEventsSlides = {{ $eventosAreaChunks->count() }};
+@else
+    const totalEventsSlides = 0;
+@endif
+
+// Para todos los eventos de la dirección
+@if($todosLosEventos->count() > 0)
+    const totalAllEventsSlides = {{ $eventosChunks->count() }};
+@else  
+    const totalAllEventsSlides = 0;
+@endif
+
+const eventsTrack = document.getElementById('eventsCarouselTrack');
+const allEventsTrack = document.getElementById('allEventsCarouselTrack');
+
+function updateEventsCarousel() {
+    if (eventsTrack && totalEventsSlides > 0) {
+        eventsTrack.style.transform = `translateX(-${currentEventsSlide * 100}%)`;
+        
+        // Actualizar indicadores del carousel del área
+        const areaEventsIndicators = document.querySelectorAll('.events-carousel-indicators .events-indicator');
+        areaEventsIndicators.forEach((indicator, index) => {
+            indicator.classList.toggle('active', index === currentEventsSlide);
+        });
+    }
 }
 
-function nextSlide() {
-    currentSlide = (currentSlide + 1) % totalSlides;
-    updateCarousel();
+function updateAllEventsCarousel() {
+    if (allEventsTrack && totalAllEventsSlides > 0) {
+        allEventsTrack.style.transform = `translateX(-${currentAllEventsSlide * 100}%)`;
+        
+        // Actualizar indicadores del carousel de todos los eventos
+        const allEventsIndicators = document.querySelectorAll('.events-carousel-indicators .events-indicator');
+        allEventsIndicators.forEach((indicator, index) => {
+            indicator.classList.toggle('active', index === currentAllEventsSlide);
+        });
+    }
 }
 
-function goToSlide(slideIndex) {
-    currentSlide = slideIndex;
-    updateCarousel();
+function nextEventsSlide() {
+    if (totalEventsSlides > 1) {
+        currentEventsSlide = (currentEventsSlide + 1) % totalEventsSlides;
+        updateEventsCarousel();
+    }
 }
 
-// Auto-advance carousel
-setInterval(nextSlide, 4000);
+function nextAllEventsSlide() {
+    if (totalAllEventsSlides > 1) {
+        currentAllEventsSlide = (currentAllEventsSlide + 1) % totalAllEventsSlides;
+        updateAllEventsCarousel();
+    }
+}
+
+function goToEventsSlide(slideIndex) {
+    currentEventsSlide = slideIndex;
+    updateEventsCarousel();
+}
+
+function goToAllEventsSlide(slideIndex) {
+    currentAllEventsSlide = slideIndex;
+    updateAllEventsCarousel();
+}
+
+// Auto-advance eventos carousel solo si hay más de un slide
+if (totalEventsSlides > 1) {
+    setInterval(nextEventsSlide, 5000);
+}
+
+// Auto-advance todos los eventos carousel solo si hay más de un slide  
+if (totalAllEventsSlides > 1) {
+    setInterval(nextAllEventsSlide, 7000);
+}
 
 // Modal functionality
 function openModal(src) {

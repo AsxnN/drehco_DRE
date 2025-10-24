@@ -99,6 +99,13 @@
                                target="_blank">
                                 <i class="fa fa-eye"></i>
                             </a>
+                            
+                            <!-- ⭐ NUEVO BOTÓN PARA EVENTOS -->
+                            <a href="{{ route('admin.areas.eventos', $area) }}" 
+                               class="btn btn-success btn-sm" 
+                               title="Gestionar Eventos">
+                                <i class="fas fa-calendar-alt"></i>
+                            </a>
                         </div>
                     </td>
                 </tr>

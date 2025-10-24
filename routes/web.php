@@ -195,6 +195,7 @@ use App\Http\Controllers\DireccionController;
 // Rutas públicas para direcciones
 Route::get('/direcciones/{direccion}', [DireccionController::class, 'show'])->name('direcciones.show');
 Route::get('/direcciones/{direccion}/{area}', [DireccionController::class, 'show'])->name('direcciones.area');
+Route::get('/menus/paginaweb/{idpagina}', [DireccionController::class, 'showPorPagina']);
 
 // Rutas administrativas (con middleware auth)
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -216,7 +217,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('admin/areas-menu/{area}/edit', [DireccionController::class, 'editArea'])->name('admin.areas-menu.edit');
     Route::put('admin/areas-menu/{area}', [DireccionController::class, 'updateArea'])->name('admin.areas-menu.update');
     Route::delete('admin/areas-menu/{area}', [DireccionController::class, 'destroyArea'])->name('admin.areas-menu.destroy');
-});
 
+    // Eventos de áreas
+    Route::get('/admin/areas/{area}/eventos', [DireccionController::class, 'eventosArea'])->name('admin.areas.eventos');
+    Route::post('/admin/areas/{area}/eventos', [DireccionController::class, 'storeEvento'])->name('admin.eventos.store');
+
+    Route::get('/admin/eventos/{evento}/edit', [DireccionController::class, 'editEvento'])->name('admin.eventos.edit');
+    Route::put('/admin/eventos/{evento}', [DireccionController::class, 'updateEvento'])->name('admin.eventos.update');
+    Route::delete('/admin/eventos/{evento}', [DireccionController::class, 'destroyEvento'])->name('admin.eventos.destroy');
+    Route::get('/admin/eventos/{evento}/archivos', [DireccionController::class, 'getEventoArchivos'])->name('admin.eventos.archivos');
+    Route::delete('/admin/eventos/{evento}/archivo/{numeroArchivo}', [DireccionController::class, 'eliminarArchivoEvento'])->name('admin.eventos.eliminar-archivo');
+
+});
+    Route::get('/epr', [App\Http\Controllers\EPRController::class, 'index'])->name('epr.index');
+    Route::get('/epr/pdf/{id}', [App\Http\Controllers\EPRController::class, 'showPdf'])->name('epr.pdf');
+    Route::get('/epr/serve/{id}', [App\Http\Controllers\EPRController::class, 'servePdf'])->name('epr.serve');
+    Route::get('/epr/download/{id}', [App\Http\Controllers\EPRController::class, 'downloadPdf'])->name('epr.download');
 
 require __DIR__.'/auth.php';

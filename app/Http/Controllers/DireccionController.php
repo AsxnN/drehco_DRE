@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Direccion;
 use App\Models\AreasMenu;
 use App\Models\Pagina;
+use App\Models\EventoArea;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Menu;
@@ -136,8 +137,21 @@ class DireccionController extends Controller
     // Gestión de contenido web
     public function adminContenido($direccion_id)
     {
-        $direccion = Direccion::with(['areasMenu', 'pagina'])->findOrFail($direccion_id);
-        return view('intranet.direcciones.contenido', compact('direccion'));
+        try {
+            $direccion = Direccion::with(['areasMenu', 'pagina'])->findOrFail($direccion_id);
+            
+            // Debug: verificar que la dirección se encuentra
+            \Log::info('adminContenido - Direccion found: ' . $direccion->nombre);
+            
+            return view('intranet.direcciones.contenido', compact('direccion'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error en adminContenido: ' . $e->getMessage());
+            
+            // Redirigir con error si no se encuentra la dirección
+            return redirect()->route('admin.direcciones')
+                            ->with('error', 'Dirección no encontrada');
+        }
     }
 
     // Actualizar contenido web
@@ -279,22 +293,30 @@ class DireccionController extends Controller
     // Vista pública de direcciones
     public function show($direccion_slug, $area_slug = null)
     {
-        // Cargar menús para la plantilla base
-        $menus = \App\Models\Menu::where('activo_menu', 1)->whereNull('categoriamenu')->get();
-        $submenus = \App\Models\Menu::whereNotNull('categoriamenu')->get();
+        // ⭐ MISMO PATRÓN QUE HomeController
+        $menus = Menu::where('activo_menu', 1)->whereNull('categoriamenu')->get();
+        $submenus = Menu::whereNotNull('categoriamenu')->get();
         
         $direccion = Direccion::where('slug', $direccion_slug)
                             ->where('activo', true)
-                            ->with('areasMenu')
+                            ->with(['areasMenu' => function($query) {
+                                $query->where('activo', true)
+                                    ->with(['eventos' => function($eventQuery) {
+                                        $eventQuery->activos()->ordenados();
+                                    }])
+                                    ->orderBy('orden', 'asc');
+                            }])
                             ->firstOrFail();
 
+        $area_actual = null;
         if ($area_slug) {
-            $area_actual = AreasMenu::where('slug', $area_slug)
-                                ->where('direccion_id', $direccion->id)
-                                ->where('activo', true)
-                                ->firstOrFail();
-        } else {
-            $area_actual = $direccion->areasMenu->first();
+            $area_actual = $direccion->areasMenu()
+                                    ->with(['eventos' => function($query) {
+                                        $query->activos()->ordenados();
+                                    }])
+                                    ->where('slug', $area_slug)
+                                    ->where('activo', true)
+                                    ->first();
         }
 
         return view('paginas.direcciones.show', compact('direccion', 'area_actual', 'menus', 'submenus'));
@@ -304,81 +326,67 @@ class DireccionController extends Controller
     public function showPorPagina($idpagina)
     {
         try {
-            \Log::info("=== INICIO showPorPagina ===");
-            \Log::info('ID Página recibido: ' . $idpagina);
+            \Log::info("showPorPagina called with idpagina: " . $idpagina);
             
-            // Cargar menús para la plantilla base
-            $menus = \App\Models\Menu::where('activo_menu', 1)->whereNull('categoriamenu')->get();
-            $submenus = \App\Models\Menu::whereNotNull('categoriamenu')->get();
-            
-            // Verificar que la página existe
-            $pagina = Pagina::find($idpagina);
-            \Log::info('Página encontrada: ' . ($pagina ? 'SÍ' : 'NO'));
-            
-            if (!$pagina) {
-                \Log::error('Página no encontrada con ID: ' . $idpagina);
-                abort(404, 'Página no encontrada');
-            }
-            
-            // Buscar la dirección por idpagina
             $direccion = Direccion::where('idpagina', $idpagina)
-                                ->where('activo', true)
-                                ->first();
-            
-            \Log::info('Dirección encontrada: ' . ($direccion ? $direccion->nombre : 'NO'));
-            
+                            ->where('activo', true)
+                            ->with(['areasMenu' => function($query) {
+                                $query->where('activo', true)
+                                        ->with(['eventos' => function($eventQuery) {
+                                            $eventQuery->activos()->ordenados();
+                                        }])
+                                        ->orderBy('orden', 'asc')
+                                        ->orderBy('nombre', 'asc');
+                            }])
+                            ->first();
+
             if (!$direccion) {
-                \Log::warning('Creando dirección automáticamente para página: ' . $idpagina);
+                \Log::info("Creating automatic direccion for idpagina: " . $idpagina);
                 $direccion = $this->crearDireccionAutomatica($idpagina);
             }
 
-            // Cargar las áreas
-            $direccion->load('areasMenu');
-            \Log::info('Áreas cargadas: ' . $direccion->areasMenu->count());
-
-            // Buscar área específica si se proporciona
             $area_actual = null;
-            if (request()->has('area')) {
-                $area_slug = request()->get('area');
-                $area_actual = $direccion->areasMenu->where('slug', $area_slug)->first();
-                \Log::info('Área solicitada: ' . $area_slug . ' - Encontrada: ' . ($area_actual ? 'SÍ' : 'NO'));
-            }
-
-            // Si no hay área específica, tomar la primera
-            if (!$area_actual) {
-                $area_actual = $direccion->areasMenu->first();
-            }
-
-            \Log::info('Área actual: ' . ($area_actual ? $area_actual->nombre : 'NINGUNA'));
-            \Log::info("=== FIN showPorPagina ===");
+            $area_slug = request('area');
             
-            // Pasar todas las variables necesarias a la vista
+            if ($area_slug && $direccion) {
+                $area_actual = $direccion->areasMenu()
+                                    ->with(['eventos' => function($query) {
+                                        $query->activos()->ordenados();
+                                    }])
+                                    ->where('slug', $area_slug)
+                                    ->first();
+            }
+
+            // ⭐ USAR EL MISMO PATRÓN QUE HomeController
+            $menus = Menu::where('activo_menu', 1)->whereNull('categoriamenu')->get();
+            $submenus = Menu::whereNotNull('categoriamenu')->get();
+
+            if (!$direccion) {
+                \Log::error("Unable to create or find direccion for idpagina: " . $idpagina);
+                abort(404, 'Dirección no encontrada');
+            }
+
+            \Log::info("Returning view with direccion: " . $direccion->nombre);
+            
             return view('paginas.direcciones.show', compact('direccion', 'area_actual', 'menus', 'submenus'));
             
         } catch (\Exception $e) {
-            \Log::error('ERROR COMPLETO en showPorPagina:');
-            \Log::error('Mensaje: ' . $e->getMessage());
-            \Log::error('Archivo: ' . $e->getFile() . ':' . $e->getLine());
+            \Log::error('Error en showPorPagina: ' . $e->getMessage());
             \Log::error('Stack trace: ' . $e->getTraceAsString());
             
-            // Mostrar la página normal en caso de error
             try {
-                $pagina = Pagina::find($idpagina);
-                if ($pagina) {
-                    $menus = \App\Models\Menu::where('activo_menu', 1)->whereNull('categoriamenu')->get();
-                    $submenus = \App\Models\Menu::whereNotNull('categoriamenu')->get();
-                    
-                    return view('paginas/paginaweb', [
-                        'menus' => $menus,
-                        'submenus' => $submenus,
-                        'paginaweb' => $pagina
-                    ]);
-                }
+                $direccion = $this->crearDireccionAutomatica($idpagina);
+                $area_actual = null;
+                
+                // ⭐ TAMBIÉN AQUÍ USAR EL MISMO PATRÓN
+                $menus = Menu::where('activo_menu', 1)->whereNull('categoriamenu')->get();
+                $submenus = Menu::whereNotNull('categoriamenu')->get();
+                
+                return view('paginas.direcciones.show', compact('direccion', 'area_actual', 'menus', 'submenus'));
             } catch (\Exception $e2) {
-                \Log::error('Error secundario: ' . $e2->getMessage());
+                \Log::error('Error creating automatic direccion: ' . $e2->getMessage());
+                abort(404, 'Error al cargar la dirección');
             }
-            
-            abort(500, 'Error interno del servidor');
         }
     }
 
@@ -387,27 +395,34 @@ class DireccionController extends Controller
     {
         $direccionesMap = [
             20 => [
-                'nombre' => 'Dirección de Gestión Pedagógica',
-                'slug' => 'gestion-pedagogica',
-                'descripcion' => 'Encargada de la gestión pedagógica y curricular de la región.'
-            ],
-            21 => [
-                'nombre' => 'Dirección de Gestión Institucional', 
+                'nombre' => 'Dirección de Gestión Institucional',
                 'slug' => 'gestion-institucional',
                 'descripcion' => 'Responsable de la gestión institucional y normativa de la región.'
             ],
-            22 => [
-                'nombre' => 'Dirección de Gestión Administrativa',
-                'slug' => 'gestion-administrativa', 
+            21 => [
+                'nombre' => 'Dirección de Gestión Administrativa', 
+                'slug' => 'gestion-administrativa',
                 'descripcion' => 'Maneja los aspectos administrativos, recursos humanos y logística.'
+            ],
+            22 => [
+                'nombre' => 'Dirección de Gestión Pedagógica',
+                'slug' => 'gestion-pedagogica',
+                'descripcion' => 'Encargada de la gestión pedagógica y curricular de la región.'
             ]
         ];
 
+        // Si el idpagina no está en el mapa, crear uno genérico
         if (!isset($direccionesMap[$idpagina])) {
-            throw new \Exception('Página de dirección no reconocida: ' . $idpagina);
+            $direccionData = [
+                'nombre' => 'Dirección General ' . $idpagina,
+                'slug' => 'direccion-general-' . $idpagina,
+                'descripcion' => 'Dirección del sistema educativo regional.'
+            ];
+        } else {
+            $direccionData = $direccionesMap[$idpagina];
         }
 
-        $direccionData = $direccionesMap[$idpagina];
+        \Log::info("Creating direccion with data: ", $direccionData);
 
         return Direccion::create([
             'nombre' => $direccionData['nombre'],
@@ -487,5 +502,85 @@ class DireccionController extends Controller
         
         // Retornar URL que apunte a public_html
         return url($rutaImagen);
+    }
+
+    /**
+     * Mostrar eventos de un área
+     */
+    public function eventosArea(AreasMenu $area)
+    {
+        // Cargar la relación direccion
+        $area->load('direccion');
+        
+        $eventos = $area->todosLosEventos()->paginate(10);
+        return view('intranet.direcciones.eventos-area', compact('area', 'eventos'));
+    }
+
+    /**
+     * Crear nuevo evento
+     */
+    public function storeEvento(Request $request, AreasMenu $area)
+    {
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'required|string',
+            'enlace_1' => 'nullable|url',
+            'descripcion_enlace_1' => 'nullable|string|max:255',
+            'enlace_2' => 'nullable|url',
+            'descripcion_enlace_2' => 'nullable|string|max:255',
+            'enlace_3' => 'nullable|url',
+            'descripcion_enlace_3' => 'nullable|string|max:255',
+            'enlace_4' => 'nullable|url',
+            'descripcion_enlace_4' => 'nullable|string|max:255',
+            'enlace_5' => 'nullable|url',
+            'descripcion_enlace_5' => 'nullable|string|max:255',
+            'enlace_externo' => 'nullable|url',
+            'orden' => 'nullable|integer'
+        ]);
+
+        $evento = new EventoArea($request->all());
+        $evento->area_id = $area->id;
+        $evento->orden = $request->orden ?? 0;
+        $evento->save();
+
+        return back()->with('success', 'Evento creado exitosamente');
+    }
+
+    /**
+     * Actualizar evento
+     */
+    public function updateEvento(Request $request, EventoArea $evento)
+    {
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'required|string',
+            'enlace_1' => 'nullable|url',
+            'descripcion_enlace_1' => 'nullable|string|max:255',
+            'enlace_2' => 'nullable|url',
+            'descripcion_enlace_2' => 'nullable|string|max:255',
+            'enlace_3' => 'nullable|url',
+            'descripcion_enlace_3' => 'nullable|string|max:255',
+            'enlace_4' => 'nullable|url',
+            'descripcion_enlace_4' => 'nullable|string|max:255',
+            'enlace_5' => 'nullable|url',
+            'descripcion_enlace_5' => 'nullable|string|max:255',
+            'enlace_externo' => 'nullable|url',
+            'orden' => 'nullable|integer',
+            'activo' => 'required|boolean'
+        ]);
+
+        $evento->fill($request->all());
+        $evento->save();
+
+        return back()->with('success', 'Evento actualizado exitosamente');
+    }
+
+    /**
+     * Eliminar evento
+     */
+    public function destroyEvento(EventoArea $evento)
+    {
+        $evento->delete();
+        return back()->with('success', 'Evento eliminado exitosamente');
     }
 }
